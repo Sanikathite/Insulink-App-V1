@@ -71,6 +71,12 @@ module.exports = (sequelize, DataTypes) => {
         {
           unique: true,
           fields: ['user_id', 'site_id']
+        },
+        {
+          fields: ['push_enabled', 'site_id']
+        },
+        {
+          fields: ['fcm_token']
         }
       ]
     }

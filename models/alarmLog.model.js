@@ -10,13 +10,11 @@ module.exports = (sequelize, DataTypes) => {
         as: 'channel'
       });
 
-      // PRD 12.5: Track which user acknowledged the alarm
       AlarmLog.belongsTo(models.User, {
         foreignKey: 'acknowledged_by',
         as: 'ack_user'
       });
 
-      // Track which user performed the final reset
       AlarmLog.belongsTo(models.User, {
         foreignKey: 'reset_by',
         as: 'reset_user'
@@ -35,18 +33,15 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false
       },
-      // PRD 12.4: Statuses for the Dashboard logic
       status: {
         type: DataTypes.ENUM('ACTIVE', 'ACKNOWLEDGED', 'CLEARED', 'RESET'),
         defaultValue: 'ACTIVE',
         comment: 'ACTIVE = Unacknowledged fault, CLEARED = Normal but needs reset'
       },
-      // PRD 12.4: Severity at the time of the fault (captured from Channel priority)
       severity: {
         type: DataTypes.ENUM('CRITICAL', 'WARNING', 'INFO'),
         allowNull: false
       },
-      // PRD 12.6: Detailed Timestamps for filtering and history
       fault_at: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -74,7 +69,16 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: true
       },
-      // PRD 12.3: Log the specific message sent in notifications
+      hooter_muted_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Tracks when the device-level hooter was muted'
+      },
+      last_tested_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Tracks latest alarm test trigger time'
+      },
       alarm_message: {
         type: DataTypes.TEXT,
         allowNull: true

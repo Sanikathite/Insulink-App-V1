@@ -1,11 +1,11 @@
-// auth.middleware.js
+
 const jwt = require("jsonwebtoken");
 const { User, Role, Site } = require("../models");
 const userConfig = require("../config/user.config");
 const { sendError } = require("../functions/sendResponse");
 const authService = require("../services/auth.service");
 
-// ✅ STEP 1: GET USER (Login Prep)
+
 const getUser = async (req, res, next) => {
   try {
     const { name } = req.body;
@@ -37,7 +37,7 @@ const getUser = async (req, res, next) => {
   }
 };
 
-// ✅ STEP 2: PASSWORD MATCH
+
 const matchPassword = async (req, res, next) => {
   try {
     const { password } = req.body;
@@ -58,12 +58,10 @@ const matchPassword = async (req, res, next) => {
   }
 };
 
-// ✅ STEP 3: SIGN TOKEN
 const sign_in = (req, res, next) => {
   try {
     const user = req.foundUser;
 
-    // JWT Payload updated for Alarm Annunciator RBAC
     const token = jwt.sign(
       {
         userId: user.user_id,
@@ -93,21 +91,21 @@ const sign_in = (req, res, next) => {
   }
 };
 
-// ✅ STEP 4: AUTHENTICATION GATE (The Guardian)
+
 const loginRequired = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     
-    // Check if token exists and follows 'JWT <token>' or 'Bearer <token>'
+
     if (!authHeader) return sendError(next, "Authorization header missing", 401);
     
     const token = authHeader.split(" ")[1];
     if (!token) return sendError(next, "Token missing", 401);
 
-    // Verify token
+
     const decoded = jwt.verify(token, userConfig.SECRET);
 
-    // Fetch user with Role to support RBAC check in next middleware
+
     const user = await User.findOne({
       where: { user_id: decoded.userId },
       attributes: ["user_id", "name", "email", "role_id", "account_status"],
@@ -126,7 +124,7 @@ const loginRequired = async (req, res, next) => {
       return sendError(next, "Access denied. User is Inactive.", 403);
     }
 
-    // Attach user to request
+
     req.user = user.get({ plain: true });
 
     console.log(`✅ User ${user.name} authenticated via JWT`);

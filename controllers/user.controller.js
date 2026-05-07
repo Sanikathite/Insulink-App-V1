@@ -4,7 +4,7 @@ const db = require("../models");
 const { User, Role } = db;
 const authService = require("../services/auth.service");
 const { handleError, sendError } = require("../functions/sendResponse");
- const { Op } = require("sequelize");
+const { Op } = require("sequelize");
 
 exports.create = async (req, res, next) => {
   const transaction = await db.sequelize.transaction();
@@ -18,9 +18,9 @@ exports.create = async (req, res, next) => {
     const name = req.body.name ? req.body.name.trim() : "";
     const email = req.body.email ? req.body.email.trim() : "";
     const contact = req.body.contact ? req.body.contact.trim() : ""; 
-    const { password, user_type, role_id, designation } = req.body;
+    const { password, role_id } = req.body;
 
-    if (!name || !email || !password || !user_type || !role_id) {
+    if (!name || !email || !password || !role_id) {
       await transaction.rollback();
       return sendError(next, "All required fields must be filled", 400);
     }
@@ -74,11 +74,9 @@ exports.create = async (req, res, next) => {
       {
         name,
         email,
-        contact: contact, 
+        contact,
         password: hashedPassword,
-        user_type,
         role_id,
-        designation: user_type === "CLIENT" ? null : (designation ? designation.trim() : null),
         account_status: "ACTIVE",
         created_by: req.user.name,
         updated_by: req.user.name
@@ -87,7 +85,9 @@ exports.create = async (req, res, next) => {
     );
 
     await transaction.commit();
-    req.createdData = createdUser.get({ plain: true });
+    const payload = createdUser.get({ plain: true });
+    delete payload.password;
+    res.locals.data = payload;
     next();
 
   } catch (error) {
@@ -178,7 +178,6 @@ exports.bulkUpload = async (req, res, next) => {
     let emptyCount = 0;
     let duplicateCount = 0;
     let invalidRoleCount = 0;
-    let invalidTypeCount = 0;
     let invalidContactCount = 0; // Added tracker
 
     /* ---------------- NORMALIZE INPUT ---------------- */
@@ -187,9 +186,7 @@ exports.bulkUpload = async (req, res, next) => {
       email: typeof u.email === "string" ? u.email.trim().toLowerCase() : "",
       contact: u.contact ? String(u.contact).trim() : "", 
       password: u.password,
-      user_type: u.user_type,
-      role_id: u.role_id,
-      designation: u.designation
+      role_id: u.role_id
     }));
 
     /* ---------------- FILTER & BASIC VALIDATION ---------------- */
@@ -198,13 +195,8 @@ exports.bulkUpload = async (req, res, next) => {
 
     for (const u of normalized) {
       // ✅ Updated: Removed u.contact from required check (since "" is allowed)
-      if (!u.name || !u.email || !u.password || !u.user_type || !u.role_id) {
+      if (!u.name || !u.email || !u.password || !u.role_id) {
         emptyCount++;
-        continue;
-      }
-
-      if (!["BRIOT", "CLIENT"].includes(u.user_type)) {
-        invalidTypeCount++;
         continue;
       }
 
@@ -288,9 +280,7 @@ exports.bulkUpload = async (req, res, next) => {
         email: u.email,
         contact: u.contact, // Saves "" if empty
         password: await authService.hashPassword(u.password),
-        user_type: u.user_type,
         role_id: u.role_id,
-        designation: u.user_type === "CLIENT" ? null : (u.designation ? u.designation.trim() : null),
         account_status: "ACTIVE",
         created_by: req.user.name,
         updated_by: req.user.name
@@ -317,10 +307,13 @@ exports.bulkUpload = async (req, res, next) => {
         empty_records: emptyCount,
         duplicates: duplicateCount,
         invalid_roles: invalidRoleCount,
-        invalid_user_types: invalidTypeCount,
         invalid_contacts: invalidContactCount // Added to summary
       },
-      data: createdUsers.map(u => u.get({ plain: true }))
+      data: createdUsers.map(u => {
+        const plainUser = u.get({ plain: true });
+        delete plainUser.password;
+        return plainUser;
+      })
     });
 
   } catch (err) {
@@ -338,7 +331,6 @@ exports.search = async (req, res, next) => {
     const {
       name,
       email,
-      user_type,
       role_id,
       account_status,
       limit = 20,
@@ -347,10 +339,6 @@ exports.search = async (req, res, next) => {
 
     if (isNaN(limit) || isNaN(offset)) {
       return sendError(next, "Invalid pagination parameters", 400);
-    }
-
-    if (user_type && !["BRIOT", "CLIENT"].includes(user_type)) {
-      return sendError(next, "Invalid user_type", 400);
     }
 
     if (account_status && !["ACTIVE", "INACTIVE"].includes(account_status)) {
@@ -365,7 +353,6 @@ exports.search = async (req, res, next) => {
 
     if (name) where.name = { [db.Sequelize.Op.like]: `%${name}%` };
     if (email) where.email = { [db.Sequelize.Op.like]: `%${email}%` };
-    if (user_type) where.user_type = user_type;
     if (role_id) where.role_id = role_id;
     if (account_status) where.account_status = account_status;
 
@@ -382,6 +369,7 @@ exports.search = async (req, res, next) => {
     const users = await User.findAll({
       where,
       include: [roleInclude],
+      attributes: { exclude: ["password"] },
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [["created_at", "DESC"]]
@@ -423,14 +411,9 @@ exports.update = async (req, res, next) => {
     }
 
     // 2. Normalization & Restricted Fields
-    if (req.body.user_type !== undefined) {
-      await transaction.rollback();
-      return sendError(next, "User type cannot be updated", 400);
-    }
-
     // Prepare update object with trimmed strings
     const updates = {};
-    const allowedFields = ["name", "email", "contact", "password", "role_id", "designation", "account_status"];
+    const allowedFields = ["name", "email", "contact", "password", "role_id", "account_status"];
     
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {
@@ -525,8 +508,12 @@ exports.update = async (req, res, next) => {
 
     await transaction.commit();
 
-    // Prepare data for the next middleware (logging/response)
-    req.updatedData = { user_id, ...updates };
+    const updatedUser = await User.findByPk(user_id, {
+      attributes: { exclude: ["password"] },
+      include: [{ model: Role, as: "role", attributes: ["role_id", "role_name"] }]
+    });
+
+    res.locals.data = updatedUser ? updatedUser.get({ plain: true }) : { user_id, ...updates };
     next();
 
   } catch (error) {

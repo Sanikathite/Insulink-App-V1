@@ -3,11 +3,28 @@ const { sendError } = require("../functions/sendResponse");
 
 /**
  * RBAC Middleware
- * @param {Object} options - { accessKey: 'MODULE_CODE' }
+ * @param {Object} options - { accessKey: 'MODULE_CODE', permission: 'view'|'action'|'edit' }
  */
 module.exports = (options = {}) => {
   return async (req, res, next) => {
     try {
+      const { accessKey, permission = "view" } = options;
+
+      if (!accessKey) {
+        return sendError(next, "RBAC configuration error: accessKey is required", 500);
+      }
+
+      const permissionMap = {
+        view: "can_view",
+        action: "can_perform_action",
+        edit: "can_edit"
+      };
+
+      const permissionField = permissionMap[permission];
+      if (!permissionField) {
+        return sendError(next, "RBAC configuration error: invalid permission type", 500);
+      }
+
       // 1. Check if user is injected by authMiddleware
       if (!req.user) {
         return sendError(next, "Unauthorized user", 401);
@@ -28,12 +45,12 @@ module.exports = (options = {}) => {
       // 3. Find the specific module (e.g., 'ALARM_DASHBOARD' or 'ALARM_ACTIONS')
       const access = await Access.findOne({
         where: {
-          module_code: options.accessKey,
+          module_code: accessKey,
         },
       });
 
       if (!access) {
-        return sendError(next, `Access module '${options.accessKey}' not defined in DB`, 403);
+        return sendError(next, `Access module '${accessKey}' not defined in DB`, 403);
       }
 
       // 4. Check if this role has a relation to this access module
@@ -44,12 +61,12 @@ module.exports = (options = {}) => {
         },
       });
 
-      if (!roleAccess || !roleAccess.can_view) {
+      if (!roleAccess || !roleAccess[permissionField]) {
         return sendError(next, "Access denied: Insufficient permissions", 403);
       }
 
       console.log(
-        `✅ RBAC OK → role=${role.role_name}, module=${options.accessKey}, method=${req.method}`
+        `✅ RBAC OK → role=${role.role_name}, module=${accessKey}, permission=${permission}, method=${req.method}`
       );
 
       next();

@@ -12,9 +12,7 @@ console.log(`==================== New Logs From ${moment(new Date()).format("DD-
 
 const app = express();
 const { currentVersionNo } = require('./config/version.config');
-// const { autoEscalateTickets } = require('./controllers/ticket.controller'); // ✅ import your function
 
-// const PORT = process.env.PORT || 27193;
 const PORT = process.env.PORT || 3000;
 const IP = 'localhost';
 const PROTOCOL = 'http';

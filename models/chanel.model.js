@@ -47,6 +47,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM('CRITICAL', 'WARNING', 'INFO'),
         defaultValue: 'WARNING'
       },
+      message: {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+        comment: 'Alarm message template pushed to dashboard and notifications'
+      },
       // PRD 10.2: Hardware logic type
       input_type: {
         type: DataTypes.ENUM('NO', 'NC'),
@@ -64,6 +69,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(50),
         defaultValue: 'NORMAL',
         allowNull: true
+      },
+      group_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment: 'Optional group bucket for mass channel operations'
       },
       // Master toggle for the channel
       is_enabled: {

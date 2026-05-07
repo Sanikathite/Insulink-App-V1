@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       User.belongsTo(models.Role, {
         foreignKey: 'role_id',
-        targetKey: 'role_id', // ✅ Force Sequelize to use role_id instead of id
+        targetKey: 'role_id', 
         as: 'role',
         onDelete: 'RESTRICT'
       });

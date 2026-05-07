@@ -37,6 +37,15 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM('ACKNOWLEDGE', 'RESET', 'MUTE', 'TEST'),
         allowNull: false
       },
+      target_entity: {
+        type: DataTypes.JSON,
+        allowNull: false,
+        defaultValue: {}
+      },
+      diff_payload: {
+        type: DataTypes.JSON,
+        allowNull: true
+      },
       performed_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
@@ -47,6 +56,14 @@ module.exports = (sequelize, DataTypes) => {
       },
       source: {
         type: DataTypes.STRING(100),
+        allowNull: true
+      },
+      ip_address: {
+        type: DataTypes.STRING(45),
+        allowNull: true
+      },
+      user_agent: {
+        type: DataTypes.STRING(255),
         allowNull: true
       }
     },

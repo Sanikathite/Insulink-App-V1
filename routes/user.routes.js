@@ -6,7 +6,18 @@ const users = require("../controllers/user.controller");
 const auth = require("../middlewares/auth.middleware");
 const checkAccess = require("../middlewares/access.middleware");
 const authController = require("../controllers/auth");
+const notificationController = require("../controllers/notification.controller");
 const sendResponse = require("../functions/sendResponse");
+
+
+router.get(
+  "/search/records",
+  auth.loginRequired,
+  checkAccess({ accessKey: "USER_MASTER" }),
+  users.search,
+  sendResponse.sendFindResponse
+);
+
 
 router.post(
   "/sign-in",
@@ -16,6 +27,16 @@ router.post(
   sendResponse.sendFindResponse
 );
 
+// router.post(
+//   "/sign-in/request-otp",
+//   authController.requestSignInOtp
+// );
+
+// router.post(
+//   "/sign-in/verify-otp",
+//   authController.verifySignInOtp
+// );
+
 router.put(
   "/change-password",
   auth.loginRequired,
@@ -23,12 +44,23 @@ router.put(
 );
 
 router.get(
-  "/search/records",
+  "/notification-preferences",
   auth.loginRequired,
-  // checkAccess({ accessKey: "USER_MASTER" }),
-  users.search,
-  sendResponse.sendFindResponse
+  notificationController.getNotificationPreference
 );
+
+router.put(
+  "/notification-preferences",
+  auth.loginRequired,
+  notificationController.upsertNotificationPreference
+);
+
+router.put(
+  "/notification-preferences/fcm-token",
+  auth.loginRequired,
+  notificationController.upsertFcmToken
+);
+
 
 router.post(
   "/",

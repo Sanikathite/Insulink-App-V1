@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       this.hasMany(models.User, {
         foreignKey: 'role_id',
-        sourceKey: 'role_id', // ✅ Explicitly point to the custom primary key
+        sourceKey: 'role_id', 
         as: 'users',
         onDelete: 'CASCADE'
       });
@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
       if (models.RoleAccessRelation) {
         this.hasMany(models.RoleAccessRelation, {
           foreignKey: 'role_id',
-          sourceKey: 'role_id', // ✅ Point to the custom PK here too
+          sourceKey: 'role_id', 
           as: 'role_access',
           onDelete: 'CASCADE'
         });

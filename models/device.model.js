@@ -36,7 +36,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false
       },
-      // Unique hardware identifier (Serial Number or MAC)
       hardware_uid: {
         type: DataTypes.STRING(100),
         unique: true,
@@ -46,7 +45,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(255),
         allowNull: false
       },
-      // PRD 10.2: For 4G GSM connectivity and SMS alerts
       gsm_number: {
         type: DataTypes.STRING(20),
         allowNull: true
@@ -55,7 +53,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(50),
         allowNull: true
       },
-      // PRD 10.2: Connectivity status (Ethernet/GSM)
       ip_address: {
         type: DataTypes.STRING(45),
         allowNull: true
@@ -81,7 +78,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(20),
         allowNull: true
       },
-      // PRD 12.7: Tracking for Admin configurations
       created_by: DataTypes.STRING,
       updated_by: DataTypes.STRING
     },

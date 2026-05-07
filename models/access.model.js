@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Access.hasMany(models.RoleAccessRelation, {
         foreignKey: 'access_id',
-        as: 'role_relations' // Updated alias for clarity
+        as: 'role_relations' 
       });
     }
   }
@@ -18,18 +18,15 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true
       },
-      // E.g., 'ALARM_MGMT', 'USER_MGMT'
       module_code: {
         type: DataTypes.STRING(100),
         allowNull: false,
         unique: true
       },
-      // Human readable name
       module_name: {
         type: DataTypes.STRING(255),
         allowNull: false
       },
-      // Industrial Context: Explains what permissions this module covers
       description: {
         type: DataTypes.STRING(255),
         allowNull: true

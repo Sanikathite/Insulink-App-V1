@@ -33,9 +33,11 @@
     "node-imap": "^0.9.6",
     "nodemon": "^3.1.11",
     "numeral": "^2.0.6",
+    "pdfkit": "^0.18.0",
     "sequelize": "^6.37.7",
     "simple-imap": "^0.1.6",
     "socket.io": "^4.8.3",
+    "twilio": "^6.0.0",
     "winston": "^3.9.0",
     "xlsx": "^0.18.5"
   }
