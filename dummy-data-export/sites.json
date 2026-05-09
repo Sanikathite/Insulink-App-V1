@@ -1,0 +1,26 @@
+[
+  {
+    "site_id": 7,
+    "site_name": "Substation A",
+    "location": "North Zone",
+    "status": "ACTIVE",
+    "created_by": "TEST_SCRIPT",
+    "updated_by": "TEST_SCRIPT"
+  },
+  {
+    "site_id": 8,
+    "site_name": "Substation B",
+    "location": "South Zone",
+    "status": "ACTIVE",
+    "created_by": "TEST_SCRIPT",
+    "updated_by": "TEST_SCRIPT"
+  },
+  {
+    "site_id": 9,
+    "site_name": "Substation C",
+    "location": "East Zone",
+    "status": "ACTIVE",
+    "created_by": "TEST_SCRIPT",
+    "updated_by": "TEST_SCRIPT"
+  }
+]
