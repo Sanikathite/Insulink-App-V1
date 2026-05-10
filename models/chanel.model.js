@@ -16,6 +16,16 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'channel_id',
         as: 'alarm_logs'
       });
+
+      Channel.hasMany(models.AlarmSensorReading, {
+        foreignKey: 'channel_id',
+        as: 'sensor_readings'
+      });
+
+      Channel.hasOne(models.AlarmThreshold, {
+        foreignKey: 'channel_id',
+        as: 'threshold'
+      });
     }
   }
 

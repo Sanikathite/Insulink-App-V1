@@ -19,6 +19,18 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'reset_by',
         as: 'reset_user'
       });
+
+      AlarmLog.belongsTo(models.AlarmSensorReading, {
+        foreignKey: 'reading_id',
+        as: 'sensor_reading',
+        onDelete: 'SET NULL'
+      });
+
+      AlarmLog.belongsTo(models.AlarmThreshold, {
+        foreignKey: 'threshold_id',
+        as: 'threshold',
+        onDelete: 'SET NULL'
+      });
     }
   }
 
@@ -32,6 +44,18 @@ module.exports = (sequelize, DataTypes) => {
       channel_id: {
         type: DataTypes.INTEGER,
         allowNull: false
+      },
+      reading_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      },
+      threshold_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      },
+      fault_type: {
+        type: DataTypes.ENUM('UNDERCURRENT', 'OVERCURRENT'),
+        allowNull: true
       },
       status: {
         type: DataTypes.ENUM('ACTIVE', 'ACKNOWLEDGED', 'CLEARED', 'RESET'),
@@ -93,7 +117,9 @@ module.exports = (sequelize, DataTypes) => {
       indexes: [
         { fields: ['status'] },
         { fields: ['fault_at'] },
-        { fields: ['channel_id'] }
+        { fields: ['channel_id'] },
+        { fields: ['reading_id'] },
+        { fields: ['threshold_id'] }
       ]
     }
   );

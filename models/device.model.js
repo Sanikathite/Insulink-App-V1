@@ -22,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'device_id',
         as: 'health_logs'
       });
+
+      Device.hasMany(models.AlarmSensorReading, {
+        foreignKey: 'device_id',
+        as: 'sensor_readings'
+      });
     }
   }
 

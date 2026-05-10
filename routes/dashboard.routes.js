@@ -7,6 +7,7 @@ const auth = require('../middlewares/auth.middleware');
 const checkAccess = require('../middlewares/access.middleware');
 const sendResponse = require('../functions/sendResponse');
 const dashboard = require('../controllers/dashboard.controller');
+const alarmSensor = require('../controllers/alarmSensor.controller');
 
 const allowedActionRoles = new Set(['ADMIN', 'OPERATOR']);
 
@@ -141,6 +142,35 @@ router.get(
   auth.loginRequired,
   checkAccess({ accessKey: 'ALARM_HISTORY', permission: 'view' }),
   dashboard.exportAlarmHistory
+);
+
+router.get(
+  '/alarms/readings',
+  auth.loginRequired,
+  checkAccess({ accessKey: 'ALARM_DASHBOARD', permission: 'view' }),
+  alarmSensor.getReadings
+);
+
+router.post(
+  '/alarms/readings',
+  auth.loginRequired,
+  checkAccess({ accessKey: 'ALARM_DASHBOARD', permission: 'action' }),
+  alarmSensor.createReading
+);
+
+router.get(
+  '/alarms/thresholds',
+  auth.loginRequired,
+  checkAccess({ accessKey: 'DEVICE_MASTER', permission: 'view' }),
+  alarmSensor.getThresholds
+);
+
+router.put(
+  '/alarms/thresholds',
+  auth.loginRequired,
+  checkAccess({ accessKey: 'DEVICE_MASTER', permission: 'edit' }),
+  alarmSensor.ensureAdminRole,
+  alarmSensor.upsertThreshold
 );
 
 router.get(
