@@ -799,7 +799,7 @@ exports.getRecurringInsights = async (req, res, next) => {
   }
 };
 
-// Vraut's features 
+// Vraut's features for analytics part 
 
 const analyticsService = require("../services/analytics.service");
 const { handleError } = require("../functions/sendResponse");
