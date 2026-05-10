@@ -12,6 +12,7 @@ const {
   AlarmAction,
   SystemHealthLog
 } = require('../models');
+const logger = require('../config/winston');
 const { sendError } = require('../functions/sendResponse');
 
 const parsePositiveInt = (value, fallback) => {
@@ -105,6 +106,46 @@ const escapeCsv = (value) => {
   if (value === null || value === undefined) return '';
   const stringified = String(value).replace(/"/g, '""');
   return `"${stringified}"`;
+};
+
+const buildPdfBuffer = (exportRows, filters) => {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 36, size: 'A4' });
+    const chunks = [];
+
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', (error) => reject(error));
+
+    doc.fontSize(16).text('Alarm History Export', { align: 'left' });
+    doc.moveDown(0.5);
+    doc.fontSize(10).text(`Generated At: ${new Date().toISOString()}`);
+    doc.text(`Filters: ${JSON.stringify(filters)}`);
+    doc.moveDown(0.75);
+
+    exportRows.forEach((row, index) => {
+      const line = [
+        `${index + 1}.`,
+        `Alarm# ${row.alarm_id}`,
+        row.status,
+        row.severity,
+        `${row.site_name}/${row.device_name}`,
+        `CH-${row.channel_number} ${row.channel_label}`,
+        row.fault_at
+      ].join(' | ');
+
+      doc.fontSize(9).text(line);
+
+      if (row.alarm_message) {
+        doc.fontSize(8).fillColor('#333333').text(`Message: ${row.alarm_message}`);
+        doc.fillColor('#000000');
+      }
+
+      doc.moveDown(0.35);
+    });
+
+    doc.end();
+  });
 };
 
 const buildAlarmStateSnapshot = (alarm) => ({
@@ -1048,20 +1089,31 @@ exports.exportAlarmHistory = async (req, res, next) => {
       return sendError(next, 'Invalid format. Supported values are csv or pdf', 400);
     }
 
+    const responseMode = req.query.response ? String(req.query.response).toLowerCase() : 'file';
+    const exportLimit = req.query.limit ? parsePositiveInt(req.query.limit, null) : null;
+    logger.info(`[alarm-history-export] start format=${format} response=${responseMode} limit=${exportLimit || 'all'}`);
+
     const queryParts = buildHistoryQueryParts(req);
     if (queryParts.error) {
       return sendError(next, queryParts.error.message, queryParts.error.status);
     }
 
     const { where, include, filters } = queryParts;
+    logger.info(`[alarm-history-export] filters=${JSON.stringify(filters)}`);
 
-    const rows = await AlarmLog.findAll({
+    const findOptions = {
       where,
       include,
       order: [['fault_at', 'DESC']],
-      limit: 5000,
       subQuery: false
-    });
+    };
+
+    if (exportLimit) {
+      findOptions.limit = exportLimit;
+    }
+
+    const rows = await AlarmLog.findAll(findOptions);
+    logger.info(`[alarm-history-export] rows=${rows.length}`);
 
     const exportRows = rows.map((alarm) => ({
       alarm_id: alarm.alarm_id,
@@ -1104,15 +1156,45 @@ exports.exportAlarmHistory = async (req, res, next) => {
       });
 
       const fileName = `alarm-history-${Date.now()}.csv`;
+      const csvPayload = lines.join('\n');
+      logger.info(`[alarm-history-export] csv bytes=${Buffer.byteLength(csvPayload, 'utf8')}`);
+
+      if (responseMode === 'json' || responseMode === 'base64') {
+        const base64 = Buffer.from(csvPayload, 'utf8').toString('base64');
+        logger.info(`[alarm-history-export] csv base64 length=${base64.length}`);
+        return res.status(200).json({
+          success: true,
+          data: {
+            fileName,
+            contentType: 'text/csv',
+            base64
+          }
+        });
+      }
+
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-      return res.status(200).send(lines.join('\n'));
+      return res.status(200).send(csvPayload);
     }
 
     const fileName = `alarm-history-${Date.now()}.pdf`;
+
+    if (responseMode === 'json' || responseMode === 'base64') {
+      const pdfBuffer = await buildPdfBuffer(exportRows, filters);
+      logger.info(`[alarm-history-export] pdf bytes=${pdfBuffer.length}`);
+      return res.status(200).json({
+        success: true,
+        data: {
+          fileName,
+          contentType: 'application/pdf',
+          base64: pdfBuffer.toString('base64')
+        }
+      });
+    }
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-
+    logger.info('[alarm-history-export] streaming pdf response');
     const doc = new PDFDocument({ margin: 36, size: 'A4' });
     doc.pipe(res);
 
@@ -1145,6 +1227,7 @@ exports.exportAlarmHistory = async (req, res, next) => {
 
     doc.end();
   } catch (error) {
+    logger.error(`[alarm-history-export] failed: ${error.message}`);
     next(error);
   }
 };

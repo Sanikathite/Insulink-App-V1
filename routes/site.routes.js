@@ -11,11 +11,6 @@ const sendResponse = require("../functions/sendResponse");
 // Controller
 const sites = require("../controllers/site.controller");
 
-// ==========================================
-// SITE ROUTES
-// ==========================================
-
-// Search Sites
 router.get(
   "/search/records",
   auth.loginRequired,
